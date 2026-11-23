@@ -2,6 +2,21 @@
 
 Pick your tool. Nothing is uploaded anywhere — the skills read files on your machine.
 
+## No git? Download the zip instead
+
+Every `git clone` below can be replaced with one download:
+
+```
+https://github.com/umeshramya/nice-hms-skills/archive/refs/heads/main.zip
+```
+
+Unzip it. For the monthly pack, put the contents in `%USERPROFILE%\Documents\Nice-HMS\kit\` — that
+is the folder the pack's `AGENTS.md` looks for. Nothing else needs installing: no git, no Node,
+no Python.
+
+Updating is the same download again, replacing the folder. The kit records the commit it was
+installed at in `installed.json`; when the repo's newest commit differs, there is a newer kit.
+
 ---
 
 ## Claude Code
@@ -29,8 +44,9 @@ Skills are read from `.claude/skills/` **inside the folder you open**. So:
    ```
 3. Open that folder and run `claude`.
 
-> Already opened the monthly pack? It ships its own `.claude/skills/` — you may not need this repo
-> at all. Copy these skills only for the extras (research paper, presentation).
+> Already opened the monthly pack? **Older** packs ship their own `.claude/skills/` — for those you
+> may not need this repo at all. Newer packs carry data and the stub `AGENTS.md` only, so this repo
+> is where the skills come from.
 
 ---
 
