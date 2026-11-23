@@ -41,6 +41,15 @@ This folder is data. What to do with it lives in the Nice HMS kit.
 If %USERPROFILE%\Documents\Nice-HMS\kit is missing, or its skills.json version is lower than
 `kit: <version>`, stop and install it from <url>, then reopen this folder.
 
+## Step 1 — is there a newer kit?
+
+The kit writes the commit it was installed at into installed.json. Fetch the newest commit:
+
+GET https://api.github.com/repos/<owner>/<repo>/commits/main
+
+If the sha differs from installed.json, a newer kit exists. Tell the owner and, on their
+say-so, download and replace the kit folder. No git needed.
+
 ## Until the kit is installed
 
 A balance column is a position at that moment, not money earned or collected this month.
