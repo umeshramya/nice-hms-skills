@@ -59,11 +59,43 @@ Send it back with its provenance — <the generated feedback curl>.
 
 ## Version handshake
 
-The pack's `kit:` value is the minimum kit it was generated against; it matches `version` in
-`skills.json` (currently `0.2.0`). The kit checks it on load:
+Two numbers, deliberately different:
 
-- no kit → say so, install, and until then only the three lines under *Until the kit is installed* apply;
-- kit older than `kit:` → say so and offer the update; do not run on the older kit silently.
+- **`kit:` in the pack** is a *floor* — the oldest kit that pack was generated against. Fixed at
+  send time; a pack may be opened years later with a much newer kit, and that is fine.
+- **the commit on `main`** is the *ceiling* — the newest kit available right now. This is what
+  changes when a skill is fixed.
+
+The pack's `kit:` value matches `version` in `skills.json` (currently `0.2.0`). Checks, in order:
+
+1. **No kit, or kit version below `kit:`** → say so, install, and until then only the lines under
+   *Until the kit is installed* apply. Never run a pack on a kit older than it asks for.
+2. **Kit present and at or above `kit:`** → run. Then, separately, check for a newer kit.
+
+### How the "is there a newer kit" check works — no git required
+
+`skills.json` in the kit carries three URLs: `repo`, `check`, `zip`. The check is one HTTPS GET:
+
+```
+GET https://api.github.com/repos/umeshramya/nice-hms-skills/commits/main
+→ { "sha": "<40 hex>" , ... }
+```
+
+The installer writes the `sha` it installed at into `installed.json` beside `skills.json`:
+
+```json
+{ "version": "0.2.0", "commit": "<40 hex>", "installed": "2026-11-23" }
+```
+
+When the two `sha` values differ, a newer kit exists. Tell the owner, show the `zip` URL, and on
+their say-so download it and replace the kit folder. Updates are **whole-folder replacements**, not
+merges — the kit is not the owner's to edit, and a local edit is a lost edit.
+
+Run this check **twice**: when a pack folder is opened (the stub's Step 0) and when a new pack's
+email arrives. Both are moments the doctor is already looking at the kit.
+
+**Not chosen:** `git pull` (needs git on a hospital PC), npm (needs Node *and* a registry publish
+per fix). Both add a dependency to solve a problem a plain HTTPS GET already solves.
 
 ## What the kit must carry instead
 

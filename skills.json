@@ -3,6 +3,9 @@
   "version": "0.2.0",
   "updated": "2026-11-23",
   "description": "Reusable skills for AI tools working on a hospital's own Nice HMS data.",
+  "repo": "https://github.com/umeshramya/nice-hms-skills",
+  "check": "https://api.github.com/repos/umeshramya/nice-hms-skills/commits/main",
+  "zip": "https://github.com/umeshramya/nice-hms-skills/archive/refs/heads/main.zip",
   "skills": [
     { "name": "financial-status", "path": "skills/financial-status", "version": "0.2.0" },
     { "name": "doctor-payouts", "path": "skills/doctor-payouts", "version": "0.1.0" },
