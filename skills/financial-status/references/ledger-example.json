@@ -1,0 +1,51 @@
+{
+  "org": "Example Hospital",
+  "schema": 1,
+  "note": "Worked example only. The real ledger lives at %USERPROFILE%\\Documents\\Nice-HMS\\actions.json and is never overwritten.",
+  "actions": [
+    {
+      "id": "A-2026-11-01",
+      "opened": "2026-11",
+      "title": "Collect the ten largest patient debts",
+      "why": "the top ten carry 42% of ₹18.4L outstanding, and ₹6.1L of it is over 90 days old",
+      "do": [
+        "Open the patient dues report for the month",
+        "Call the ten largest accounts and note what each one says",
+        "Record the outcome against the account in your billing module"
+      ],
+      "check": { "metric": "debtors_top10_balance_inr", "at_open": 1840000 },
+      "status": "open",
+      "owner_note": "",
+      "reviewed": ["2026-11"]
+    },
+    {
+      "id": "A-2026-11-02",
+      "opened": "2026-11",
+      "title": "Require a reason on every discount above 10%",
+      "why": "₹96,400 of discounts this month carry no reason on the voucher, so the reason — which is the control — cannot be checked",
+      "do": [
+        "Tell the billing staff that a discount without a written reason will not be entered",
+        "Check the discount report weekly, not monthly",
+        "Escalate any discount above 10% to you before it is saved"
+      ],
+      "check": { "metric": "leakage_discount_rows_with_blank_notes", "at_open": 143 },
+      "status": "done",
+      "owner_note": "Owner: started 12 Nov, notes are now compulsory in the billing screen.",
+      "reviewed": ["2026-11"]
+    },
+    {
+      "id": "A-2026-11-03",
+      "opened": "2026-11",
+      "title": "Review the pharmacy sub-head sold below list",
+      "why": "surgical consumables were billed at ₹2.1L against a list value of ₹2.9L this month",
+      "do": [
+        "Compare the rate card with what was actually charged",
+        "Decide whether the lower rate is approved policy or an error"
+      ],
+      "check": { "metric": "leakage_shortfall_inr_surgical", "at_open": 81000 },
+      "status": "accepted",
+      "owner_note": "Owner: we price these below list on purpose to win the payor contracts. Leave it.",
+      "reviewed": ["2026-11"]
+    }
+  ]
+}

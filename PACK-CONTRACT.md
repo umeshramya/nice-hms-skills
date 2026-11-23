@@ -1,0 +1,91 @@
+# What the monthly pack must contain
+
+**Target state.** Packs sent before this contract still carry `README.md`, `00-START-HERE.md`,
+their own `.claude/skills/` and `tools/`. Newer packs carry data and the stub only — if you have
+an older pack, nothing breaks; the duplicate instructions it carries are simply no longer
+maintained.
+
+## The rule
+
+The zip carries **only what exists at send time, for that hospital, that month**. Test every file:
+*would this line differ for another hospital, or another month?* If no, it belongs in the repo.
+
+The point is not size — the files being removed total ~63 KB against 1.8 MB of CSV. It is that
+there is **one file to fix**, and a fix reaches every client the same day instead of next month.
+
+| File | Keep | Why |
+|---|---|---|
+| `clinical-<from>.csv`, `clinical-daily-<from>.csv` | yes | the month |
+| `financial-<orgId>/*.csv`, `store-<orgId>/*.csv` | yes | the month |
+| `manifest.json` | yes | period, organisations, files, what is missing |
+| `quality.json` | yes | what *this* pack cannot support — not knowable in advance |
+| `headline.json` | yes | the vendor's own figure, to cross-check against |
+| `AGENTS.md` | yes, the stub below | safety net before anything is installed |
+| `CLAUDE.md`, `GEMINI.md` | yes, `@AGENTS.md` | so the stub loads on its own |
+| `README.md` | **no** | per-column prose for every pack; the repo owns it |
+| `00-START-HERE.md` | **no** | routing table, identical for every client |
+| `.claude/skills/*/SKILL.md` | **no** | this is the copy that conflicts — two skill sets fire on one question |
+| `tools/*.py`, `payout-rates.csv` | **no** | repo; and it would need Python on a hospital PC |
+
+## The stub `AGENTS.md`
+
+Generated per pack, ~15 lines, carrying the period, the organisation and the kit version:
+
+```markdown
+# <org> — monthly pack, <period>
+
+This folder is data. What to do with it lives in the Nice HMS kit.
+
+## Step 0 — is the kit installed?
+
+If %USERPROFILE%\Documents\Nice-HMS\kit is missing, or its skills.json version is lower than
+`kit: <version>`, stop and install it from <url>, then reopen this folder.
+
+## Until the kit is installed
+
+A balance column is a position at that moment, not money earned or collected this month.
+Never add cash_inr, digital_inr and bank_inr together and call the result revenue.
+Revenue and collections come from financial-summary.csv.
+
+## About this pack
+
+manifest.json gives the period and the files. quality.json says what this pack cannot
+support. Both are about this month and override anything general.
+
+## A question this pack cannot answer
+
+Send it back with its provenance — <the generated feedback curl>.
+```
+
+## Version handshake
+
+The pack's `kit:` value is the minimum kit it was generated against; it matches `version` in
+`skills.json` (currently `0.2.0`). The kit checks it on load:
+
+- no kit → say so, install, and until then only the three lines under *Until the kit is installed* apply;
+- kit older than `kit:` → say so and offer the update; do not run on the older kit silently.
+
+## What the kit must carry instead
+
+Installed once, in one place, fixed for every client at the same time:
+
+- the six `SKILL.md` files;
+- `xlsx` — a stdlib-only multi-sheet writer, because a payout is a workbook and no hospital PC
+  should need a package installed to get one (PowerShell on Windows, which is always present);
+- the ledger template and the `.ics` pattern the skill documents.
+
+## The email body
+
+Read before the zip is even opened, so it carries the install line:
+
+> First time: install the Nice HMS kit from <url> once. After that, the pack and every later
+> month open ready to use.
+
+## What the pack generator must do
+
+1. Put `manifest.json`, `quality.json`, `headline.json` and every CSV in the zip.
+2. Put nothing else in except the stub `AGENTS.md` and the two one-line shims.
+3. Carry `kit: <version>` in both the stub and `manifest.json`.
+4. Carry the provenance-stamped feedback curl in the stub, so a question can come
+   back even when the pack is opened by a tool that reads no other file.
+5. Keep the README and the per-question prompts in this repo, not in the zip.

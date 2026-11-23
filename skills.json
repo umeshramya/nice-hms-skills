@@ -1,0 +1,14 @@
+{
+  "name": "nice-hms-skills",
+  "version": "0.2.0",
+  "updated": "2026-11-23",
+  "description": "Reusable skills for AI tools working on a hospital's own Nice HMS data.",
+  "skills": [
+    { "name": "financial-status", "path": "skills/financial-status", "version": "0.2.0" },
+    { "name": "doctor-payouts", "path": "skills/doctor-payouts", "version": "0.1.0" },
+    { "name": "dues-aging", "path": "skills/dues-aging", "version": "0.1.0" },
+    { "name": "revenue-leakage", "path": "skills/revenue-leakage", "version": "0.1.0" },
+    { "name": "research-paper", "path": "skills/research-paper", "version": "0.1.0" },
+    { "name": "presentation", "path": "skills/presentation", "version": "0.1.0" }
+  ]
+}
