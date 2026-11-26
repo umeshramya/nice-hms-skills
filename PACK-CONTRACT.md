@@ -75,7 +75,7 @@ Two numbers, deliberately different:
 - **the commit on `main`** is the *ceiling* — the newest kit available right now. This is what
   changes when a skill is fixed.
 
-The pack's `kit:` value matches `version` in `skills.json` (currently `0.2.0`). Checks, in order:
+The pack's `kit:` value matches `version` in `skills.json` (read it there; it moves with each release). Checks, in order:
 
 1. **No kit, or kit version below `kit:`** → say so, install, and until then only the lines under
    *Until the kit is installed* apply. Never run a pack on a kit older than it asks for.
@@ -112,7 +112,8 @@ Installed once, in one place, fixed for every client at the same time:
 
 - the six `SKILL.md` files;
 - `xlsx` — a stdlib-only multi-sheet writer, because a payout is a workbook and no hospital PC
-  should need a package installed to get one (PowerShell on Windows, which is always present);
+  should need a package installed to get one (PowerShell on Windows, which is always present); it
+  writes live formula cells for an allowlisted column, so a payout workbook shows its arithmetic;
 - the ledger template and the `.ics` pattern the skill documents.
 
 ## The email body

@@ -20,6 +20,17 @@
 # unless its header is a known identifier (mobile, phone, uhid, account, id, gstin, pincode, abha)
 # or it has a leading zero. Everything else is written as text, verbatim — nothing is coerced,
 # rounded or reformatted.
+#
+# Per sheet, two optional keys (both match a column by its header, normalised):
+#   "formula_columns": ["pay", ...]  — cells in this column that start with "=" are written as a
+#                                      live formula <f>, not as text. Only listed columns are
+#                                      eligible, so a pack value can never become a formula.
+#   "money_columns":   ["total", ...] — cells in this column use number format #,##0.00.
+# A formula almost always contains commas, so quote its CSV cell ("=IF(...,...)"); an unquoted
+# one is split by the CSV reader before it ever reaches this script.
+# Formula cells carry NO cached result: Excel, LibreOffice and Google Sheets recalculate on open,
+# but a programmatic reader (openpyxl data_only, pandas) sees nothing. Pair a formula column with a
+# plain control total when a reader must trust the number without opening Excel.
 
 param(
     [Parameter(Mandatory = $true)][string]$Spec,
@@ -89,7 +100,20 @@ function Read-CsvRows([string]$path) {
     return [pscustomobject]@{ Headers = $headers; Rows = @() }
 }
 
-function New-SheetXml($headers, $rows, $extraText) {
+function Resolve-ColumnIndexes($headers, $names) {
+    # Header name(s) -> 1-based column indexes. Normalised the same way as identifiers so
+    # "What-if payout (₹)" and "whatif_payout" resolve to the same column.
+    $idx = @()
+    if (-not $names) { return $idx }
+    $want = @($names | ForEach-Object { ([string]$_ -replace '[^A-Za-z0-9_]', '').ToLowerInvariant() })
+    for ($c = 1; $c -le $headers.Count; $c++) {
+        $h = ([string]$headers[$c - 1] -replace '[^A-Za-z0-9_]', '').ToLowerInvariant()
+        if ($want -contains $h) { $idx += $c }
+    }
+    return $idx
+}
+
+function New-SheetXml($headers, $rows, $extraText, $formulaIdx, $moneyIdx) {
     $sb = [System.Text.StringBuilder]::new()
     [void]$sb.Append('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>')
     [void]$sb.Append('<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">')
@@ -116,14 +140,21 @@ function New-SheetXml($headers, $rows, $extraText) {
             $header = [string]$headers[$c - 1]
             $value = [string]$rec.$header
             $ref = (Get-ColumnName $c) + $rowNo
-            if ((Test-IsNumber $value) -and -not (Test-IdentifierHeader $header $extraText)) {
-                [void]$sb.Append("<c r=`"$ref`"><v>$($value.Trim())</v></c>")
+            $style = ''
+            if ($moneyIdx -contains $c) { $style = ' s="2"' }
+
+            if (($formulaIdx -contains $c) -and $value.StartsWith('=')) {
+                # live formula — allowlisted column only, so pack text can never become one
+                [void]$sb.Append("<c r=`"$ref`"$style><f>$(ConvertTo-XmlText $value.Substring(1))</f></c>")
+            }
+            elseif ((Test-IsNumber $value) -and -not (Test-IdentifierHeader $header $extraText)) {
+                [void]$sb.Append("<c r=`"$ref`"$style><v>$($value.Trim())</v></c>")
             }
             elseif ([string]::IsNullOrEmpty($value)) {
                 # leave the cell absent: an empty cell, not a zero
             }
             else {
-                [void]$sb.Append("<c r=`"$ref`" t=`"inlineStr`"><is><t xml:space=`"preserve`">$(ConvertTo-XmlText $value)</t></is></c>")
+                [void]$sb.Append("<c r=`"$ref`"$style t=`"inlineStr`"><is><t xml:space=`"preserve`">$(ConvertTo-XmlText $value)</t></is></c>")
             }
         }
         [void]$sb.Append('</row>')
@@ -167,7 +198,9 @@ foreach ($s in @($cfg.sheets)) {
     $parsed = Read-CsvRows $csvPath
     $extra = @()
     if ($s.text_columns) { $extra = @($s.text_columns | ForEach-Object { ([string]$_ -replace '[^A-Za-z0-9_]', '').ToLowerInvariant() }) }
-    $sheets += [pscustomobject]@{ Name = $name; Headers = $parsed.Headers; Rows = $parsed.Rows; ExtraText = $extra; Csv = $csvPath }
+    $fIdx = Resolve-ColumnIndexes $parsed.Headers $s.formula_columns
+    $mIdx = Resolve-ColumnIndexes $parsed.Headers $s.money_columns
+    $sheets += [pscustomobject]@{ Name = $name; Headers = $parsed.Headers; Rows = $parsed.Rows; ExtraText = $extra; FormulaIdx = $fIdx; MoneyIdx = $mIdx; Csv = $csvPath }
 }
 
 $outPath = [string]$cfg.out
@@ -222,11 +255,12 @@ for ($n = 1; $n -le $sheets.Count; $n++) {
 
 $styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
 '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+'<numFmts count="1"><numFmt numFmtId="164" formatCode="#,##0.00"/></numFmts>' +
 '<fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts>' +
 '<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>' +
 '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>' +
 '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
-'<cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs>' +
+'<cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs>' +
 '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>' +
 '</styleSheet>'
 
@@ -240,7 +274,7 @@ try {
     Add-ZipText $zip 'xl/styles.xml' $styles
     for ($n = 1; $n -le $sheets.Count; $n++) {
         $sh = $sheets[$n - 1]
-        Add-ZipText $zip "xl/worksheets/sheet$n.xml" (New-SheetXml $sh.Headers $sh.Rows $sh.ExtraText)
+        Add-ZipText $zip "xl/worksheets/sheet$n.xml" (New-SheetXml $sh.Headers $sh.Rows $sh.ExtraText $sh.FormulaIdx $sh.MoneyIdx)
     }
 }
 finally {

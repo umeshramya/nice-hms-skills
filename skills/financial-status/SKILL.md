@@ -75,6 +75,21 @@ number — do not guess which one is right.
 Both held exactly on a real production pack (₹730 and ₹66,000). It is the cheapest way to catch a
 mis-read column before it becomes a wrong sentence in front of a doctor.
 
+### Which side each voucher sits on — revenue versus collections
+
+Read the month as two flows, not one, because a credit note and a refund are not the same money:
+
+- **Revenue.** `financial-summary.billed_inr` is gross billed **minus credit notes** — it is already
+  net. Cross-check it against `revenue-by-sub-head.csv`: `sum(billed_inr) − sum(credit_notes_inr) =
+  sum(net_inr)`, and that equals `financial-summary.billed_inr` (on a real pack: 10,846,768 − 730 =
+  10,846,038). A credit note lowers billed revenue **and** lowers outstanding.
+- **Collections.** `collected_inr = receipts_inr − refunds_inr` (8,598,388 − 66,000 = 8,532,388), and
+  `outstanding_inr = billed_inr − collected_inr` (10,846,038 − 8,532,388 = 2,313,650). A refund lowers
+  collections and cash **only** — never billed revenue, never a consultant's base.
+
+Say which side a voucher sits on before you quote it. A credit note is not a refund, and a refund is
+not a discount.
+
 ## Who or what is driving the leakage
 
 The leakage total alone changes nothing. Find the concentration, and name it — but name it as
@@ -144,10 +159,13 @@ The consultant earns on **what was billed**, not on what the hospital collected.
 - A **recorded discount or below-tariff override lowers the billed line**, and therefore lowers the
   consultant's payout too. It hurts both. A discount is weak evidence of collusion and strong
   evidence of a pricing or policy problem.
-- Money that **never reaches the hospital but was already billed** — a refund, a credit note raised
-  after the share was computed, or an item never billed at all — costs the hospital and leaves the
-  consultant's money intact. **That** is the gap worth asking about, and it is the honest way to
-  frame the owner's instinct.
+- Money that **never reaches the hospital but was already billed** — a refund, or an item never
+  billed at all — costs the hospital and leaves the consultant's money intact. **That** is the gap
+  worth asking about, and it is the honest way to frame the owner's instinct.
+- **A credit note is the exception, and it depends on which figure you read.** Carried as a negative
+  reversal line in `consultant-payout-detail.csv`, it lowers a base *recomputed* from the detail file,
+  so a what-if is net of it. A `payout_inr` frozen before the note was raised does not reflect it.
+  Say which figure you are quoting; do not claim both at once.
 
 Say this distinction in the report. It is the difference between a question and an insult.
 
@@ -155,13 +173,16 @@ Say this distinction in the report. It is the difference between a question and 
 
 Run only the ones the files support; say which were skipped and why.
 
-1. **Credit notes — count and value only; attribution is impossible.** The `biller` column is
-   blank on every credit note in production (2 of 2 on a real pack), as are `item`, `notes` and
-   `encounter_id` — a credit note is a header-level voucher with a date and an amount, nothing
-   more. Do **not** build a by-biller table, and do not run a median-biller comparison on two
-   rows. Report the count, the total and the dates, reconcile the total to
-   `financial-summary.credit_notes_inr`, and state plainly: *the pack cannot say who raised these*.
-   Then ask the owner directly, without a name attached.
+1. **Credit notes — count and value first; attribution is impossible when `biller` is blank.**
+   `biller` was blank on every credit note on one real pack (2 of 2) — and with it `item` and
+   `notes` — which reads as a header-level voucher with a date and an amount. **But check the
+   columns on the pack in hand; do not assume.** On a newer pack `encounter_id` and `party` *were*
+   populated, which lets you tie the note to an encounter and to the matching negative reversal line
+   in `consultant-payout-detail.csv` — use that to corroborate the reversal, **not** to deduct it a
+   second time. When `biller` is blank, do **not** build a by-biller table or run a median-biller
+   comparison on two rows; report the count, the total and the dates, reconcile the total to
+   `financial-summary.credit_notes_inr`, and state plainly that the pack cannot say who raised them.
+   Ask the owner directly, without a name attached.
 2. **Rate overrides by biller** — `kind = overrides`, sum `amount_inr`, count, grouped on
    `biller` (which **is** populated here — it carries the last user to touch the line). These are
    lines billed below list with `discount_pct` = 0, i.e. a rate change rather than a percentage
@@ -374,7 +395,7 @@ CSV per sheet with the sheet name as a suffix and say the workbook could not be 
 | # | Sheet | From | Carries |
 |---|---|---|---|
 | 1 | Ledger | `consultant-payable.csv` | `consultant, ledger, debits, credits, balance` — the payable ledger **exactly as carried**, one row per consultant. That file has no billed figure, no share and no TDS; do not pretend otherwise |
-| 2 | Line items | `consultant-payout-detail.csv` | `encounter_id, encounter, item, rate_inr, quantity, total_incl_gst_inr, share_pct, payout_inr`, grouped by encounter |
+| 2 | Line items | `consultant-payout-detail.csv` | `encounter_id, encounter, item, kind (Invoice / Credit-note reversal), rate_inr, quantity, total_incl_gst_inr, share_pct, payout_inr`, grouped by encounter. A negative `total_incl_gst_inr` row is a credit-note reversal — same `encounter_id` and `item` as the line it reverses |
 | 3 | By item | `consultant-payout-detail.csv` | grouped on `item`: lines, quantity, `total_incl_gst_inr`, payout |
 | 4 | Pending from payors | `pending-payor-payout.csv` | unpaid insurer/TPA/PMJAY bills, amount held, and the month it may land — money **not** in this payout |
 | 5 | Prior-period paid now | `encounters.csv` | encounters whose `revenue_month_inr` is 0 and `collection_month_inr` is not — billed in an earlier month, settled this one |
@@ -410,12 +431,51 @@ to design from columns that are not there:
 - Where `share_pct` is 0, mark the row *no share on this line* and leave the payout column **blank
   rather than 0** — a zero in a payout column reads as "paid nothing", which nobody has asserted.
   The work is still shown; the money is not invented.
+- **The base is already net of credit notes.** `consultant-payout-detail.csv` carries a reversal as a
+  negative line, so `sum(total_incl_gst_inr)` is net — do not subtract the `leakage.csv` credit-note
+  total again. Never `abs()` the money column, never drop the negative rows, and never compute a line
+  from `rate_inr × quantity`: both stay positive on a reversal row, so that re-grosses it. A reversal
+  yields a negative payout line — show it, negative (it is the clawback, not an error).
+- **A refund is not in the base.** It lowers collections and cash, not billed revenue and not a
+  consultant's payout. Only a credit note touches the base.
+- **`quantity` does not net by summing** on a reversal row; compute net qty as
+  `sum(qty where total > 0) − sum(qty where total < 0)`, or show invoices and reversals separately.
 - Sheet 2 carries **no patient name, UHID or mobile** — the detail file has none. Show `encounter`
   as carried and nothing more; do not lift a name out of that free text.
 - The skill **does not send** and never emails a doctor. It writes the workbooks and a mail list the
   admin can use; forwarding to a clinician is the admin's decision and the admin's action.
 - If `recipients.json` is missing, still write the per-consultant workbooks and say plainly that no
   email addresses were available, so nothing can be forwarded without them.
+
+### Formula contract — the workbook shows its arithmetic
+
+Write the money columns as live formulas, not Python-baked literals, so the admin can see how each
+figure was reached and a mis-ranged total fails visibly on open. Keep the prose figures in the PDF
+coming from the Python numbers; the workbook carries the formulas plus a plain control value.
+
+- **Rate in one cell** — `Summary!$B$3`, the assumed share as a decimal (`0.8`), labelled *assumed*.
+- **Line items, payout column** — `=IF(Summary!$B$3="","",ROUND(Gn*Summary!$B$3,2))`. A blank rate
+  leaves the cell **blank**, never 0.
+- **Totals** — `=SUM('Line items'!$G$3:$G${last})` and `=SUM('Line items'!$J$3:$J${last})`, written on
+  a script-authored sheet/cell (the Summary), not in a pack-data column. `SUM` over the full range
+  pulls the negative reversal lines in by design; that is the point of it.
+- **Allowlist only script-authored columns.** Put the payout column, the totals and the check cells in
+  `formula_columns` — never a pack-data column such as `total_incl_gst_inr`. That allowlist is what
+  stops a pack value starting with `=` from becoming a formula; the base total is therefore summed on
+  the Summary, referencing the Line items range, rather than by allowlisting the pack column.
+- **Control totals** — put the Python value in a cell beside each `SUM` and a Check cell
+  `=IF(ABS(G{tot}-{base_control})<0.005,"OK","MISMATCH")`. A wrong range shows up immediately, before
+  anyone trusts the formula.
+- **By item, derived from Line items** so it cannot drift — lines `=COUNTIF(...)`, money
+  `=SUMIF('Line items'!$C$3:$C${last},$A{n},'Line items'!$G$3:$G${last})`, net qty
+  `=SUMIFS(qty,item,$A{n},total,">0") - SUMIFS(qty,item,$A{n},total,"<0")`.
+- **Disbursement** — `net = amount − TDS amount`: `=B{n}-E{n}`, computed when the owner fills it.
+
+Formulas are written **without a cached result**: Excel, LibreOffice and Google Sheets recalculate on
+open, but a programmatic reader (`openpyxl data_only`, pandas) sees `None`. The control totals are why
+the reader still has a number to trust. The kit's `tools/xlsx` writes formula cells only for columns
+listed in a sheet's `formula_columns` allowlist — never a heuristic on a leading `=`, so a pack value
+can never become a formula.
 
 ### Who receives what — `recipients.json`
 
@@ -481,7 +541,8 @@ unknown, say "in your billing module" rather than inventing a menu name.
 - Sum `shortfall_inr` across `leakage.csv`. It is blank for discounts, which is where much of the
   money is — use `amount_inr`.
 - Compute a consultant payout from `share_pct`. Carry `payout_inr` as read; the formula does not hold.
-- Build a by-biller table for credit notes or refunds. `biller` is blank on both.
+- Build a by-biller table for credit notes or refunds when `biller` is blank — verify the column on
+  the pack; it was blank on both in production, but check rather than assume.
 - Read a wholly-blank column as concealment. It means the hospital does not capture that field.
 - Report a figure the pack cannot support because a sheet or a table "should" have it.
 - Fuzzy-match a consultant name to an email address. Exact match or report it unmatched — a
