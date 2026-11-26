@@ -1,9 +1,8 @@
 # What the monthly pack must contain
 
-**Target state.** Packs sent before this contract still carry `README.md`, `00-START-HERE.md`,
-their own `.claude/skills/` and `tools/`. Newer packs carry data and the stub only — if you have
-an older pack, nothing breaks; the duplicate instructions it carries are simply no longer
-maintained.
+**One shape only.** A pack carries the data, `manifest.json`, `quality.json`, `headline.json` and
+the stub `AGENTS.md` — no skills, no tools, no second copy of any instruction. Everything that is
+the same for every hospital lives in this repo.
 
 ## The rule
 
@@ -114,6 +113,9 @@ Installed once, in one place, fixed for every client at the same time:
 - `xlsx` — a stdlib-only multi-sheet writer, because a payout is a workbook and no hospital PC
   should need a package installed to get one (PowerShell on Windows, which is always present); it
   writes live formula cells for an allowlisted column, so a payout workbook shows its arithmetic;
+- `payout-rates.csv` — a **header-only template** (`consultant,item,share_pct`) the hospital fills
+  in with its own shares. It fills lines the pack leaves without a share; a share the pack records
+  always wins over it. Ship it with no rows, so an unfilled template can never pay anyone;
 - the ledger template and the `.ics` pattern the skill documents.
 
 ## The email body

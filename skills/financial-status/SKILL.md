@@ -12,8 +12,8 @@ edges.
 
 1. The pack's **own `AGENTS.md`** — it ships inside the zip and is generated for that month and
    organisation. Its guardrails are properties of the data and this skill does not restate or
-   override them. If it is absent, or lacks the *balance is not revenue* guardrail, the pack is
-   older than this skill assumes: say so and do not proceed on assumptions.
+   override them. It must carry the *balance is not revenue* guardrail; if it is missing, the pack
+   is not one this kit can read — stop and say so, rather than proceeding on assumptions.
 2. `manifest.json` — the period, the organisations, every file, and what is missing.
 3. `headline.json` — the headline figures already computed for this month.
 4. `quality.json` — `notSupported` and `notChecked`. Read this **before** you write conclusions.
@@ -173,16 +173,15 @@ Say this distinction in the report. It is the difference between a question and 
 
 Run only the ones the files support; say which were skipped and why.
 
-1. **Credit notes — count and value first; attribution is impossible when `biller` is blank.**
-   `biller` was blank on every credit note on one real pack (2 of 2) — and with it `item` and
-   `notes` — which reads as a header-level voucher with a date and an amount. **But check the
-   columns on the pack in hand; do not assume.** On a newer pack `encounter_id` and `party` *were*
-   populated, which lets you tie the note to an encounter and to the matching negative reversal line
-   in `consultant-payout-detail.csv` — use that to corroborate the reversal, **not** to deduct it a
-   second time. When `biller` is blank, do **not** build a by-biller table or run a median-biller
-   comparison on two rows; report the count, the total and the dates, reconcile the total to
-   `financial-summary.credit_notes_inr`, and state plainly that the pack cannot say who raised them.
-   Ask the owner directly, without a name attached.
+1. **Credit notes — check which columns are populated before deciding what can be said.**
+   `biller`, `item` and `notes` have been blank on every credit note of a real pack (2 of 2), which
+   reads as a header-level voucher carrying a date and an amount. Where `encounter_id` and `party`
+   *are* populated, they let you tie the note to an encounter and to the matching negative reversal
+   line in `consultant-payout-detail.csv` — use that to corroborate the reversal, **not** to deduct
+   it a second time. Where `biller` is blank, do **not** build a by-biller table or run a
+   median-biller comparison on two rows; report the count, the total and the dates, reconcile the
+   total to `financial-summary.credit_notes_inr`, and state plainly that the pack cannot say who
+   raised them. Ask the owner directly, without a name attached.
 2. **Rate overrides by biller** — `kind = overrides`, sum `amount_inr`, count, grouped on
    `biller` (which **is** populated here — it carries the last user to touch the line). These are
    lines billed below list with `discount_pct` = 0, i.e. a rate change rather than a percentage
@@ -258,9 +257,23 @@ is from the books; deposits are not verified.*
 
 ## Output — a PDF
 
-Produce a PDF named `financial-status-<org>-<YYYY-MM>.pdf` and write it into that month's folder,
-`packs\<YYYY-MM>\`, so the pack, the PDF and the review travel together. It is addressed to the
-admin, and it must be a worklist, not a commentary. With it, in order:
+Produce a PDF named `financial-status-<org>-<YYYY-MM>.pdf` and write it into the **`out\` folder of the
+project** — the folder the monthly zip was extracted into:
+
+```
+<project>\                 <- the extracted pack, e.g. ...\monthly-report-2024-12
+  <pack CSVs, manifest.json, quality.json, financial-<orgId>\, store-<orgId>\>
+  out\                     <- everything this skill produces: the PDF, the workbooks, the mail list
+  reviews\                 <- actions-<YYYY-MM>.csv
+  actions.json  recipients.json  actions-reminders.ics
+```
+
+Read from the project; write **only** to its `out\`. Not beside the pack CSVs, and never to a central
+output folder. The project folder is the backup unit — copy it to another computer whole. Next month,
+extract the new zip into its own project folder beside this one and carry `actions.json` and
+`recipients.json` across.
+
+It is addressed to the admin, and it must be a worklist, not a commentary. With it, in order:
 
 0. **Front cover — one page.** Billed / collected / outstanding / receivables in a single band, the
    three worst debtors by name, and one sentence: *"if you do one thing this month, do action 1."*
@@ -292,7 +305,7 @@ table shifted one row against its labels — values under the wrong header. Catc
 Write a self-contained HTML file with an A4 print stylesheet, then convert it:
 
 ```
-msedge --headless --print-to-pdf="financial-status-<org>-<YYYY-MM>.pdf" "file:///<path>/report.html"
+msedge --headless --print-to-pdf="out/financial-status-<org>-<YYYY-MM>.pdf" "file:///<project>/out/report.html"
 ```
 
 If Edge is not found, open the HTML and say: **Ctrl+P → Save as PDF**. Same pattern the pack's own
@@ -300,28 +313,36 @@ If Edge is not found, open the HTML and say: **Ctrl+P → Save as PDF**. Same pa
 
 ## The action ledger — the memory
 
-Each monthly zip is new, so the ledger lives **outside** it, in a folder the doctor keeps:
+Each monthly zip is new, so the ledger lives beside the pack, inside the project folder, and is
+copied forward — never reset:
 
 ```
-%USERPROFILE%\Documents\Nice-HMS\
-  actions.json                    THE memory. Create it the first month, never overwrite it.
+<project>\                        the extracted monthly pack — the backup unit
+  out\                            the PDF, the per-consultant workbooks, the mail list
+  reviews\actions-2024-12.csv     this month's review
+  actions.json                    THE memory. Copied forward into every new month, never reset
   recipients.json                 role,name,email,cc[,share_pct] — supplied once by the hospital
   actions-reminders.ics           reminders for the open actions
-  packs\<YYYY-MM>\                each month's pack, unzipped into its own folder
-  reviews\actions-<YYYY-MM>.csv   this month's review, copied into that month's folder
 ```
 
-**One month, one folder.** Every monthly zip carries the same inner names — `clinical-<from>.csv`,
-`financial-<orgId>/day-book.csv`, and the rest differ only in the date. Unpacking two months into one
-folder therefore *overwrites the older month without a word*. Unzip each pack into `packs\<YYYY-MM>\`
-the day it arrives; never beside the previous month and never into the download folder. If the owner
-has already unpacked into a shared folder, move the earlier months into their own folders **before**
-reading anything. The folder name is the owner's label, not proof — open `manifest.json` and confirm
-the period it claims.
+**The project folder is the backup unit.** Everything a month needs — the pack, the ledger, the
+recipient directory, the reminders and the outputs — sits inside it, so it can be backed up or copied
+to another computer whole. The kit is the exception: it is installed once per computer, not carried in
+the project folder. When a new month arrives, extract it into its own project folder beside this one
+and copy the **previous project's `actions.json` and `recipients.json`** across before scoring.
 
-**Beginning of every run:** if `actions.json` exists, read it before writing a single line, score
-every `open` action against this month's pack, and ask the owner about each one. If it does not
-exist, and the owner has reviewed before, say so — he may be in the wrong folder.
+**One month, one project folder.** Each pack is extracted into its own folder and that folder is the
+project: it holds the pack, its own `out\`, and the ledger. Keep the months as siblings, wherever the
+owner downloads them (for example `Downloads\monthly-report-2024-12-01\`). Every monthly zip carries
+the same inner names — `clinical-<from>.csv`, `financial-<orgId>/day-book.csv`, and the rest differ
+only in the date — so unpacking two months into one folder *overwrites the earlier month without a
+word*. The folder name is the owner's label, not proof: open `manifest.json` and confirm the period
+it claims.
+
+**Beginning of every run:** read `actions.json` from the project folder before writing a single line,
+score every `open` action against this month's pack, and ask the owner about each one. If it is
+missing, say so — the ledger has not been carried across, and the owner's decisions from last month
+would otherwise be made again from scratch.
 
 **Scoring:** recompute the action's `check.metric` from this month's files and record
 *improved / unchanged / worse* with both numbers. That is what makes this memory and not a list.
@@ -386,7 +407,8 @@ The monthly pack is emailed to the hospital's **admin / person-in-charge**, neve
 admin works on these workbooks and forwards a doctor's sheet only if they decide to. The skill
 itself **sends nothing** and never emails a clinician.
 
-One **workbook per consultant**: `payout-<org>-<YYYY-MM>-<consultant>.xlsx`, six sheets. A payout is
+One **workbook per consultant**: `payout-<org>-<YYYY-MM>-<consultant>.xlsx`, six sheets, written into
+the same project's `out\` folder as the PDF. A payout is
 read as a workbook — summary, detail, what is still owed to us, what we are paying late, and how it
 left the bank — so a flat CSV cannot carry it. Write it with the kit's `xlsx` writer (stdlib only,
 no package to install — `tools/xlsx`, see `PACK-CONTRACT.md`); if it cannot run, fall back to one
@@ -395,7 +417,7 @@ CSV per sheet with the sheet name as a suffix and say the workbook could not be 
 | # | Sheet | From | Carries |
 |---|---|---|---|
 | 1 | Ledger | `consultant-payable.csv` | `consultant, ledger, debits, credits, balance` — the payable ledger **exactly as carried**, one row per consultant. That file has no billed figure, no share and no TDS; do not pretend otherwise |
-| 2 | Line items | `consultant-payout-detail.csv` | `encounter_id, encounter, item, kind (Invoice / Credit-note reversal), rate_inr, quantity, total_incl_gst_inr, share_pct, payout_inr`, grouped by encounter. A negative `total_incl_gst_inr` row is a credit-note reversal — same `encounter_id` and `item` as the line it reverses |
+| 2 | Line items | `consultant-payout-detail.csv` | `encounter_id, encounter, item, kind (Invoice / Credit-note reversal), rate_inr, quantity, total_incl_gst_inr, share_pct (as recorded), share applied (% and its basis), payout (what-if), payout_inr (as recorded)`, grouped by encounter. A negative `total_incl_gst_inr` row is a credit-note reversal — same `encounter_id` and `item` as the line it reverses. `share_pct` is carried untouched; `share applied` is the one the arithmetic uses |
 | 3 | By item | `consultant-payout-detail.csv` | grouped on `item`: lines, quantity, `total_incl_gst_inr`, payout |
 | 4 | Pending from payors | `pending-payor-payout.csv` | unpaid insurer/TPA/PMJAY bills, amount held, and the month it may land — money **not** in this payout |
 | 5 | Prior-period paid now | `encounters.csv` | encounters whose `revenue_month_inr` is 0 and `collection_month_inr` is not — billed in an earlier month, settled this one |
@@ -419,18 +441,23 @@ to design from columns that are not there:
   The patient name and visit date sit *inside* the free-text `encounter`
   (`"OPD visit Mon Dec 02 2024  AARTI  id 142878"`). Show `encounter` as it is; do not parse a
   name out of it for a payout sheet.
-- `payout_inr` is **not** `total_incl_gst_inr × share_pct ÷ 100`. On a real pack it read 0 on all
-  147 rows that carried a share, and the formula mismatched on every one. Copy the column as
-  carried; if the three do not reconcile, say so in the sheet banner and leave the money blank.
+- `payout_inr` is **not** reliably `total_incl_gst_inr × share_pct ÷ 100`: it read 0 on all 147 rows
+  that carried a share on one real pack, so it does not corroborate the share. Copy the column as
+  carried. Where `share_pct` is greater than 0, test the identity anyway and, if it fails, show both
+  the recorded payout and the computed one side by side and say they disagree — never pick one
+  silently and never assume the pack's figure is the error.
 
 - Banner on every sheet: *base is billed value including GST; the share shown is the one recorded,
   or left blank; this is not an instruction to pay.*
 - **TDS is the owner's rate**, never an assumption: an assumed section or rate is worse than a blank.
   Same for the UTR — the pack carries none, so sheet 6 records what the owner gives and stays empty
   otherwise.
-- Where `share_pct` is 0, mark the row *no share on this line* and leave the payout column **blank
-  rather than 0** — a zero in a payout column reads as "paid nothing", which nobody has asserted.
-  The work is still shown; the money is not invented.
+- **A share the pack records is honoured exactly.** Where `share_pct` is greater than 0, that is the
+  share that applies to the line — never replace it with an assumed rate. Where it is 0, fall
+  through to the hospital's `tools/payout-rates.csv`, then to the assumed rate; only if none of the
+  three exists is the payout **blank rather than 0** — a zero in a payout column reads as "paid
+  nothing", which nobody has asserted. Show the applied share beside the recorded one, and mark
+  which basis each line used. The work is still shown; the money is not invented.
 - **The base is already net of credit notes.** `consultant-payout-detail.csv` carries a reversal as a
   negative line, so `sum(total_incl_gst_inr)` is net — do not subtract the `leakage.csv` credit-note
   total again. Never `abs()` the money column, never drop the negative rows, and never compute a line
@@ -454,8 +481,18 @@ figure was reached and a mis-ranged total fails visibly on open. Keep the prose 
 coming from the Python numbers; the workbook carries the formulas plus a plain control value.
 
 - **Rate in one cell** — `Summary!$B$3`, the assumed share as a decimal (`0.8`), labelled *assumed*.
-- **Line items, payout column** — `=IF(Summary!$B$3="","",ROUND(Gn*Summary!$B$3,2))`. A blank rate
-  leaves the cell **blank**, never 0.
+- **Recorded share stays visible.** Sheet 2 keeps the pack's `share_pct` in its own column (`H`) so
+  the reader can see what the hospital configured. That column is carried, never overwritten.
+- **Line items, share applied (`I`)** —
+  `=IF(AND(ISNUMBER(Hn),Hn>0),Hn,IF(Summary!$B$3="","",Summary!$B$3*100))`. A recorded share wins;
+  the assumed rate fills the rest; a blank rate propagates as blank. Where the hospital's rate file
+  supplied the share, write that percentage as the literal fallback instead of the cell reference.
+- **Line items, payout (`J`)** — `=IF(In="","",ROUND(Gn*In/100,2))`. A blank share leaves the cell
+  **blank**, never 0. Keep a `basis` column (`pack` / `rates file` / `assumed`) beside it.
+- **Summary splits the payout** — `=SUMIF('Line items'!$H$3:$H${last},">0",'Line items'!$J$3:$J${last})`
+  for the honoured part, and the remainder of the total for the assumed part, each with its own
+  control total. A single blended payout figure hides which lines were the hospital's and which
+  were the what-if.
 - **Totals** — `=SUM('Line items'!$G$3:$G${last})` and `=SUM('Line items'!$J$3:$J${last})`, written on
   a script-authored sheet/cell (the Summary), not in a pack-data column. `SUM` over the full range
   pulls the negative reversal lines in by design; that is the point of it.
@@ -479,7 +516,7 @@ can never become a formula.
 
 ### Who receives what — `recipients.json`
 
-The directory lives in the ledger folder and is filled once by the hospital:
+The directory lives in the project folder, beside the pack, and is filled once by the hospital:
 
 ```json
 [ { "role": "admin",    "name": "Mr …",            "email": "admin@hospital", "cc": "" },

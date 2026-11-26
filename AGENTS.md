@@ -15,15 +15,15 @@ this repo does not restate them.
 
 Where they could differ, the pack wins:
 
-- Inside `packs\<YYYY-MM>\`, work from the pack's `AGENTS.md`, `00-START-HERE.md` and its own
-  `.claude/skills/`. Those are generated against the exact data in that folder.
-- From `Documents\Nice-HMS\`, use this file and these skills. They never sit in the same directory
-  as a pack, so they never shadow the pack's own instructions.
-- When this skill needs a pack rule, it **cites** it, it does not copy it — a copied rule stops
+- Inside a monthly pack folder — wherever the owner extracted the zip — the pack's `AGENTS.md` and
+  `00-START-HERE.md` govern the data. They are generated against the exact files in that folder.
+- The skills themselves always come from the installed kit
+  (`%USERPROFILE%\Documents\Nice-HMS\kit`), never from the pack. The kit never sits in the same
+  directory as a pack, so it never shadows the pack's own instructions.
+- When a skill needs a pack rule, it **cites** it, it does not copy it — a copied rule stops
   tracking the pack the day a new pack format ships.
-- A pack may therefore be newer than this repo, or older. Check for the *balance is not revenue*
-  guardrail; if it is missing, the pack predates this skill and the mismatch must be said out loud,
-  not papered over.
+- Every pack this kit supports carries the *balance is not revenue* guardrail. If a pack lacks it,
+  the pack is not one this kit can read: stop and say so, rather than papering over the mismatch.
 
 ## Rules that always apply
 
@@ -34,8 +34,9 @@ Where they could differ, the pack wins:
 3. **Say what cannot be answered.** A missing answer is a finding, not a gap to fill.
 4. **Percentages need a base.** If the base month is zero, give the absolute change and say the
    percentage is undefined.
-5. **A what-if is not an order.** Any payout figure uses a rate the user supplies; never present
-   it as what the hospital should pay.
+5. **A what-if is not an order.** A share the pack records is used exactly as recorded; any other
+   payout figure uses a rate the user supplies. Never present either as what the hospital should
+   pay.
 6. **Ask before guessing the period.** If the user has not said which month, read `manifest.json`
    (in a monthly pack) or ask.
 
@@ -63,9 +64,13 @@ Read `manifest.json` first — it lists the period, the organisations, every fil
 missing. Read `quality.json` before drawing conclusions: it states which figures the pack does
 not support.
 
-Unzip each month into its own folder, `%USERPROFILE%\Documents\Nice-HMS\packs\<YYYY-MM>\`. Every
-zip carries the same inner filenames, so unpacking a new month into an older month's folder
+Unzip each month into its own folder, wherever the owner keeps their packs (for example
+`Downloads\monthly-report-2024-12-01\`); keep months as siblings so one month never lands on top of
+another. **The extracted pack folder is the project folder** — the unit of work and of backup.
+Every zip carries the same inner filenames, so unpacking a new month into an older month's folder
 overwrites it silently. Confirm the period from `manifest.json`, not from the folder name.
+Deliverables (the PDF, the payout workbooks, the mail list) go in that project's `out\` folder, not
+beside the pack CSVs and not in any central folder.
 
 ## If no pack is present
 
@@ -77,12 +82,18 @@ data.
 `financial-status` keeps a memory that outlives any one pack, because each monthly zip is new:
 
 ```
-%USERPROFILE%\Documents\Nice-HMS\
-  actions.json       the ledger — one per hospital, carried forward every month
-  recipients.json    who to address — role,name,email,cc[,share_pct], filled once by the hospital
-  packs\<YYYY-MM>\   each month's pack, unzipped into its own folder
-  reviews\           one actions-<YYYY-MM>.csv per month
+<project>\                     the extracted monthly pack — the unit of work and of backup
+  <pack CSVs, manifest.json, quality.json, financial-<orgId>\, store-<orgId>\>
+  out\                         this month's deliverables — PDF, payout workbooks, mail list
+  reviews\                     actions-<YYYY-MM>.csv for this month
+  actions.json                 the ledger — copied forward into every new month, never reset
+  recipients.json              who to address — role,name,email,cc[,share_pct], supplied by the hospital
+  actions-reminders.ics        reminders for the open actions
 ```
+
+Everything a month needs is inside that project folder, so it can be backed up and copied to
+another computer whole. The kit is installed once per computer and is not carried in the project
+folder.
 
 - **Read it before writing anything.** Score every `open` action against this month's files and ask
   the owner about each: done, accepted, disputed, dropped.

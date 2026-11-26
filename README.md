@@ -10,18 +10,18 @@ here sends data anywhere: the skills run on your machine against files you alrea
 ## Two ways to use this repo
 
 **1. With the monthly pack.** The first-of-month email from Nice HMS carries a zip
-(`monthly-report-<month>.zip`). Unzip it, open that folder in your AI tool, and ask a question.
-The pack already includes its own `AGENTS.md` and `.claude/skills/`, so it works without this
-repo. Install these skills only if you want the extra prompts below.
+(`monthly-report-<month>.zip`). Install this kit once, unzip the pack into its own folder, open
+that folder in your AI tool, and ask a question. The pack carries the data and a stub `AGENTS.md`
+that points at the kit; the skills are always read from here, so there is only one copy to keep
+current.
 
-**2. Standalone.** Clone this repo and copy `skills/*` into your project's `.claude/skills/`
-(Claude Code) — or simply point any agent that reads `AGENTS.md` at this folder.
+**2. Standalone.** Point any agent that reads `AGENTS.md` at this folder.
 
 See **[INSTALL.md](INSTALL.md)** for the exact command for each tool.
 
 **[PACK-CONTRACT.md](PACK-CONTRACT.md)** is where this repo and the monthly zip meet: the zip
 carries the month's data and a short stub, this repo carries everything that is the same for every
-client. It describes the target; until the pack changes, packs still ship their own instructions.
+client.
 
 ## The skills
 

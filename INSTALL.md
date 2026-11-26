@@ -48,9 +48,8 @@ Skills are read from `.claude/skills/` **inside the folder you open**. So:
 > only `skills/`, also copy `tools/` beside it, or keep this repo cloned and run the script from
 > there — otherwise the skill falls back to one CSV per sheet and says so.
 
-> Already opened the monthly pack? **Older** packs ship their own `.claude/skills/` — for those you
-> may not need this repo at all. Newer packs carry data and the stub `AGENTS.md` only, so this repo
-> is where the skills come from.
+> The monthly pack carries data only, plus a stub `AGENTS.md` that points at the kit. The skills
+> always come from this repo — there is no second copy to keep in step.
 
 ---
 
