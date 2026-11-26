@@ -1,0 +1,33 @@
+[
+  {
+    "role": "admin",
+    "name": "Mr. Rakesh Kumar",
+    "email": "admin@examplehospital.in",
+    "cc": ""
+  },
+  {
+    "role": "finance",
+    "name": "Accounts Desk",
+    "email": "accounts@examplehospital.in",
+    "cc": "admin@examplehospital.in"
+  },
+  {
+    "role": "store",
+    "name": "Stores In-charge",
+    "email": "stores@examplehospital.in",
+    "cc": ""
+  },
+  {
+    "role": "pharmacy",
+    "name": "Pharmacy In-charge",
+    "email": "pharmacy@examplehospital.in",
+    "cc": ""
+  },
+  {
+    "role": "doctor",
+    "name": "Dr. Example Sharma",
+    "email": "dr.sharma@examplehospital.in",
+    "cc": "",
+    "share_pct": 60
+  }
+]

@@ -79,6 +79,7 @@ data.
 ```
 %USERPROFILE%\Documents\Nice-HMS\
   actions.json       the ledger — one per hospital, carried forward every month
+  recipients.json    who to address — role,name,email,cc[,share_pct], filled once by the hospital
   packs\<YYYY-MM>\   each month's pack, unzipped into its own folder
   reviews\           one actions-<YYYY-MM>.csv per month
 ```
@@ -89,6 +90,16 @@ data.
 - `accepted` means the owner has chosen to live with it — **stop raising it**. `disputed` means the
   AI was wrong — record it and do not raise it again.
 - The ledger holds no patient data beyond the debtor call list.
+
+## Who the output is for
+
+Everything a run produces — the PDF and the per-consultant workbooks — is addressed to the
+hospital's **admin / person-in-charge**, never to a doctor directly. `recipients.json` gives the
+roles (`admin`, `finance`, `store`, `pharmacy`, `doctor`) and their addresses so the admin can
+forward a doctor's own workbook if they choose. **The skill emails no one.** Fill each recipient
+from what that hospital actually records; where pharmacy or store is not recorded, that recipient
+gets a one-line statement, never a zero. Match a consultant to an email by **exact name only** —
+report an unmatched name, never guess.
 
 ## Sending a question back
 
